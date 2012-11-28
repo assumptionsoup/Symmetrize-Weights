@@ -40,6 +40,12 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 	bl_options = {'REGISTER', 'UNDO'}
 	
 	active_index = None
+	operation = bpy.props.EnumProperty(
+		name = "Operation",
+		items =	(('RIGHT', "Right to Left", "Right to Left"),
+				('LEFT', "Left to Right", "Left to Right"),
+				),
+		)
 
 	@classmethod
 	def poll(cls, context):
@@ -55,7 +61,14 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 		# Get right indexes
 		obj = context.object
 		verts = obj.data.vertices
-		right_indexes = [vert.index for vert in verts if vert.co[0] < 0]
+		
+		if self.active_index is None:
+			self.active_index = context.active_object.vertex_groups.active_index
+		
+		if self.operation == 'RIGHT':
+			other_indexes = [vert.index for vert in verts if vert.co[0] < 0]
+		else:
+			other_indexes = [vert.index for vert in verts if vert.co[0] > 0]
 		
 		# Flip weights (Mirror operator also handles masking for free)
 		self.restore_active_index( obj )
@@ -63,7 +76,7 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 		
 		# Save flipped weights
 		weights = {}
-		for i in right_indexes:
+		for i in other_indexes:
 			for x, group in enumerate(obj.data.vertices[i].groups):
 				if group.group == self.active_index:
 					weights[i] = (x, group.weight)
@@ -74,7 +87,7 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 		bpy.ops.object.vertex_group_mirror()
 
 		# Apply flipped weights
-		for x, i in enumerate(right_indexes):
+		for x, i in enumerate(other_indexes):
 			if i in weights:
 				obj.data.vertices[i].groups[weights[i][0]].weight = weights[i][1]
 		
@@ -85,6 +98,7 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 	
 	def invoke(self, context, event):
 		self.active_index = context.active_object.vertex_groups.active_index
+		self.operation = context.scene.weightpaint_symmetrize_operation
 		return self.execute(context)
 
 def panel_func(self, context):	
@@ -97,9 +111,17 @@ def register():
 	bpy.utils.register_module(__name__)
 	bpy.types.VIEW3D_PT_tools_weightpaint.append(panel_func)
 	
+	bpy.types.Scene.weightpaint_symmetrize_operation = bpy.props.EnumProperty(
+		name = "Operation",
+		items =	(('RIGHT', "Right to Left", "Right to Left"),
+				('LEFT', "Left to Right", "Left to Right"),
+				),
+		)
+	
 def unregister():
 	bpy.utils.unregister_module(__name__)
 	bpy.types.VIEW3D_PT_tools_weightpaint.remove(panel_func)
+	del bpy.types.Scene.weightpaint_symmetrize_operation
 	
 if __name__ == "__main__":
 	register()
