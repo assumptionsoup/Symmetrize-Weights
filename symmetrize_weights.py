@@ -72,7 +72,7 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 		
 		# Flip weights (Mirror operator also handles masking for free)
 		self.restore_active_index( obj )
-		bpy.ops.object.vertex_group_mirror()
+		bpy.ops.object.vertex_group_mirror(flip_group_names = False)
 		
 		# Save flipped weights
 		weights = {}
@@ -84,7 +84,7 @@ class WeightPaintSymmetrize(bpy.types.Operator):
 		
 		# Restore weights
 		self.restore_active_index( obj )
-		bpy.ops.object.vertex_group_mirror()
+		bpy.ops.object.vertex_group_mirror(flip_group_names = False)
 
 		# Apply flipped weights
 		for x, i in enumerate(other_indexes):
